@@ -1,0 +1,19 @@
+{
+  "name": "暑假任务打卡",
+  "short_name": "暑假打卡",
+  "description": "每日作业、试卷和照片留痕打卡。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fffdf8",
+  "theme_color": "#f7f3ea",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
