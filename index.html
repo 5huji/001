@@ -1,0 +1,1161 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f3ea">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="暑假打卡">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icon.svg">
+  <title>暑假任务打卡</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #fffdf8;
+      --ink: #202124;
+      --muted: #6a6f77;
+      --line: #d9d3c6;
+      --soft: #f4efe6;
+      --accent: #1d7f72;
+      --accent-2: #a5482d;
+      --accent-3: #315d9c;
+      --warn: #d58a17;
+      --done: #e5f4ee;
+      --shadow: 0 14px 34px rgba(48, 42, 32, .12);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,.3)),
+        repeating-linear-gradient(0deg, #f7f3ea 0, #f7f3ea 31px, #ebe3d7 32px);
+      color: var(--ink);
+    }
+
+    button, input, textarea {
+      font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: max(18px, env(safe-area-inset-top)) 18px max(28px, env(safe-area-inset-bottom));
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: end;
+      padding: 18px 0 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 6vw, 54px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .date-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.76);
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .icon-btn, .primary-btn, .text-btn {
+      border: 1px solid var(--line);
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 44px;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 1px 0 rgba(0,0,0,.03);
+    }
+
+    .icon-btn {
+      width: 46px;
+      display: inline-grid;
+      place-items: center;
+      font-size: 22px;
+    }
+
+    .primary-btn {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+      padding: 0 16px;
+      font-weight: 700;
+    }
+
+    .text-btn {
+      padding: 0 12px;
+      color: var(--muted);
+      background: rgba(255,255,255,.8);
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      width: min(520px, 100%);
+      padding: 5px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.7);
+      border-radius: 10px;
+      margin: 10px 0 20px;
+    }
+
+    .tab {
+      min-height: 42px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tab[aria-selected="true"] {
+      background: var(--ink);
+      color: white;
+    }
+
+    main {
+      display: grid;
+      gap: 20px;
+    }
+
+    .panel {
+      background: rgba(255,253,248,.9);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(244,239,230,.76);
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .meter {
+      min-width: 118px;
+      text-align: right;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .task-list {
+      display: grid;
+    }
+
+    .task {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 14px;
+      align-items: center;
+      min-height: 92px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+    }
+
+    .task:last-child { border-bottom: 0; }
+
+    .task.done {
+      background: var(--done);
+    }
+
+    .check {
+      width: 48px;
+      height: 48px;
+      border: 2px solid #9aa29e;
+      border-radius: 50%;
+      background: white;
+      color: white;
+      display: grid;
+      place-items: center;
+      font-size: 26px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .task.done .check {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .task-main {
+      min-width: 0;
+    }
+
+    .task-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+      font-size: 19px;
+      font-weight: 800;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: white;
+      background: var(--accent-3);
+      white-space: nowrap;
+    }
+
+    .tag.flex { background: var(--accent-2); }
+
+    .task-meta {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .task-tools {
+      display: grid;
+      grid-template-columns: auto auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .photo-btn {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 22px;
+    }
+
+    .photo-btn input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .thumb {
+      width: 48px;
+      height: 48px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: white;
+      cursor: pointer;
+    }
+
+    .note {
+      width: 100%;
+      min-height: 42px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: rgba(255,255,255,.82);
+      margin-top: 9px;
+    }
+
+    .weekly-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border-top: 1px solid var(--line);
+    }
+
+    .week-box {
+      min-height: 150px;
+      padding: 16px;
+      border-right: 1px solid var(--line);
+      background: var(--paper);
+    }
+
+    .week-box:last-child { border-right: 0; }
+
+    .week-label {
+      margin: 0 0 12px;
+      font-weight: 900;
+      font-size: 18px;
+    }
+
+    .slots {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+      min-height: 42px;
+    }
+
+    .slot {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--soft);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      color: var(--muted);
+    }
+
+    .slot.filled {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .week-note {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      border-top: 1px solid var(--line);
+    }
+
+    .day {
+      min-height: 132px;
+      padding: 12px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+    }
+
+    .day:nth-child(7n) { border-right: 0; }
+
+    .day.today {
+      box-shadow: inset 0 0 0 3px var(--accent);
+    }
+
+    .day-num {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+
+    .mini {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .mini-line {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-height: 18px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #c3beb4;
+      flex: 0 0 auto;
+    }
+
+    .mini-line.done .dot { background: var(--accent); }
+
+    .rest {
+      padding: 36px 16px;
+      text-align: center;
+      background: var(--paper);
+    }
+
+    .rest strong {
+      display: block;
+      font-size: 26px;
+      margin-bottom: 8px;
+    }
+
+    .record-list {
+      display: grid;
+      border-top: 1px solid var(--line);
+    }
+
+    .record {
+      display: grid;
+      grid-template-columns: 128px 1fr;
+      gap: 14px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+    }
+
+    .record:last-child { border-bottom: 0; }
+
+    .record-date {
+      font-weight: 900;
+      color: var(--accent-3);
+    }
+
+    .record-body {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+    }
+
+    .empty {
+      padding: 32px 16px;
+      text-align: center;
+      color: var(--muted);
+      background: var(--paper);
+    }
+
+    dialog {
+      border: 0;
+      border-radius: 10px;
+      padding: 0;
+      width: min(760px, calc(100% - 24px));
+      background: var(--paper);
+      box-shadow: 0 24px 70px rgba(0,0,0,.32);
+    }
+
+    dialog::backdrop {
+      background: rgba(20, 22, 24, .45);
+    }
+
+    .dialog-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: var(--soft);
+    }
+
+    .dialog-body {
+      padding: 14px;
+    }
+
+    .dialog-body img {
+      width: 100%;
+      max-height: 70vh;
+      object-fit: contain;
+      border-radius: 8px;
+      background: white;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: max(20px, env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(16px);
+      min-width: min(420px, calc(100% - 36px));
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: var(--ink);
+      color: white;
+      opacity: 0;
+      pointer-events: none;
+      transition: .2s ease;
+      text-align: center;
+      z-index: 5;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 760px) {
+      .app { padding-inline: 12px; }
+      header {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+      .actions { justify-content: flex-start; flex-wrap: wrap; }
+      .task {
+        grid-template-columns: auto 1fr;
+      }
+      .task-tools {
+        grid-column: 1 / -1;
+        grid-template-columns: auto auto 1fr;
+        justify-content: start;
+      }
+      .weekly-grid, .calendar {
+        grid-template-columns: 1fr;
+      }
+      .week-box, .day {
+        border-right: 0;
+      }
+      .record {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>暑假任务打卡</h1>
+        <div class="date-line">
+          <span class="pill" id="todayText"></span>
+          <span class="pill" id="weekText"></span>
+          <span class="pill" id="syncText">本机保存</span>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" id="prevDay" title="前一天" aria-label="前一天">‹</button>
+        <button class="icon-btn" id="todayBtn" title="回到今天" aria-label="回到今天">◎</button>
+        <button class="icon-btn" id="nextDay" title="后一天" aria-label="后一天">›</button>
+        <button class="primary-btn" id="shareBtn">分享本周</button>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="视图">
+      <button class="tab" data-view="today" aria-selected="true">今日</button>
+      <button class="tab" data-view="week" aria-selected="false">本周</button>
+      <button class="tab" data-view="records" aria-selected="false">记录</button>
+    </nav>
+
+    <main>
+      <section class="panel" id="todayView">
+        <div class="panel-head">
+          <h2 class="panel-title" id="todayTitle">今日任务</h2>
+          <div class="meter" id="dailyMeter">0/0</div>
+        </div>
+        <div id="todayContent"></div>
+      </section>
+
+      <section class="panel hidden" id="weekView">
+        <div class="panel-head">
+          <h2 class="panel-title">本周进度</h2>
+          <div class="meter" id="weeklyMeter">0/21</div>
+        </div>
+        <div class="weekly-grid" id="weeklyBoxes"></div>
+        <div class="calendar" id="calendar"></div>
+      </section>
+
+      <section class="panel hidden" id="recordsView">
+        <div class="panel-head">
+          <h2 class="panel-title">打卡记录</h2>
+          <button class="text-btn" id="exportBtn">导出记录</button>
+        </div>
+        <div class="record-list" id="recordsList"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="photoDialog">
+    <div class="dialog-head">
+      <strong id="photoTitle">照片</strong>
+      <button class="icon-btn" id="closePhoto" title="关闭" aria-label="关闭">×</button>
+    </div>
+    <div class="dialog-body">
+      <img id="photoLarge" alt="打卡照片">
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const fixedTasks = [
+      { id: "mental", name: "口算一篇", kind: "固定" },
+      { id: "writing", name: "练字一篇", kind: "固定" },
+      { id: "listening", name: "听力一篇", kind: "固定" }
+    ];
+
+    const flexibleTasks = [
+      { id: "math-1", name: "数学试卷 1", kind: "变动", group: "数学试卷", total: 2 },
+      { id: "math-2", name: "数学试卷 2", kind: "变动", group: "数学试卷", total: 2 },
+      { id: "chinese-1", name: "语文试卷", kind: "变动", group: "语文试卷", total: 1 }
+    ];
+
+    const weekNames = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+    const dbName = "summer-task-checkin-v1";
+    const storeName = "photos";
+    let db;
+    let selectedDate = startOfDay(new Date());
+    let activeView = "today";
+    let state = loadState();
+
+    const el = {
+      todayText: document.getElementById("todayText"),
+      weekText: document.getElementById("weekText"),
+      todayTitle: document.getElementById("todayTitle"),
+      dailyMeter: document.getElementById("dailyMeter"),
+      todayContent: document.getElementById("todayContent"),
+      weeklyMeter: document.getElementById("weeklyMeter"),
+      weeklyBoxes: document.getElementById("weeklyBoxes"),
+      calendar: document.getElementById("calendar"),
+      recordsList: document.getElementById("recordsList"),
+      toast: document.getElementById("toast"),
+      photoDialog: document.getElementById("photoDialog"),
+      photoLarge: document.getElementById("photoLarge"),
+      photoTitle: document.getElementById("photoTitle")
+    };
+
+    init();
+
+    async function init() {
+      db = await openDb();
+      registerOfflineCache();
+      bindEvents();
+      render();
+    }
+
+    function registerOfflineCache() {
+      if (!("serviceWorker" in navigator)) return;
+      navigator.serviceWorker.register("./sw.js").then(() => {
+        document.getElementById("syncText").textContent = "离线可用";
+      }).catch(() => {
+        document.getElementById("syncText").textContent = "本机保存";
+      });
+    }
+
+    function bindEvents() {
+      document.querySelectorAll(".tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          activeView = tab.dataset.view;
+          render();
+        });
+      });
+
+      document.getElementById("prevDay").addEventListener("click", () => {
+        selectedDate = addDays(selectedDate, -1);
+        activeView = "today";
+        render();
+      });
+
+      document.getElementById("nextDay").addEventListener("click", () => {
+        selectedDate = addDays(selectedDate, 1);
+        activeView = "today";
+        render();
+      });
+
+      document.getElementById("todayBtn").addEventListener("click", () => {
+        selectedDate = startOfDay(new Date());
+        activeView = "today";
+        render();
+      });
+
+      document.getElementById("shareBtn").addEventListener("click", shareWeek);
+      document.getElementById("exportBtn").addEventListener("click", exportRecords);
+      document.getElementById("closePhoto").addEventListener("click", () => el.photoDialog.close());
+    }
+
+    function render() {
+      updateHeader();
+      updateTabs();
+      renderToday();
+      renderWeek();
+      renderRecords();
+    }
+
+    function updateHeader() {
+      const ymd = formatDate(selectedDate);
+      el.todayText.textContent = `${ymd} ${weekNames[selectedDate.getDay()]}`;
+      const range = weekRange(selectedDate);
+      el.weekText.textContent = `${formatShort(range.start)} - ${formatShort(range.end)}`;
+    }
+
+    function updateTabs() {
+      document.querySelectorAll(".tab").forEach((tab) => {
+        tab.setAttribute("aria-selected", String(tab.dataset.view === activeView));
+      });
+      document.getElementById("todayView").classList.toggle("hidden", activeView !== "today");
+      document.getElementById("weekView").classList.toggle("hidden", activeView !== "week");
+      document.getElementById("recordsView").classList.toggle("hidden", activeView !== "records");
+    }
+
+    function renderToday() {
+      const day = selectedDate.getDay();
+      const dateKey = formatDate(selectedDate);
+      el.todayTitle.textContent = `${weekNames[day]}任务`;
+
+      if (day === 0) {
+        el.dailyMeter.textContent = "休息";
+        el.todayContent.innerHTML = `
+          <div class="rest">
+            <strong>周日休息</strong>
+            <span>今天没有作业任务。</span>
+          </div>`;
+        return;
+      }
+
+      const tasks = fixedTasks.concat(flexibleTasks);
+      const doneCount = tasks.filter((task) => getTaskEntry(dateKey, task).done).length;
+      el.dailyMeter.textContent = `${doneCount}/${tasks.length}`;
+      el.todayContent.innerHTML = `<div class="task-list"></div>`;
+      const list = el.todayContent.querySelector(".task-list");
+
+      tasks.forEach((task) => {
+        const entry = getTaskEntry(dateKey, task);
+        const row = document.createElement("article");
+        row.className = `task ${entry.done ? "done" : ""}`;
+        row.innerHTML = `
+          <button class="check" aria-label="${task.name}完成状态">${entry.done ? "✓" : ""}</button>
+          <div class="task-main">
+            <div class="task-name">
+              <span>${task.name}</span>
+              <span class="tag ${task.kind === "变动" ? "flex" : ""}">${task.kind}</span>
+            </div>
+            <div class="task-meta">${taskMeta(task, entry)}</div>
+            <textarea class="note" rows="1" placeholder="备注" aria-label="${task.name}备注">${entry.note || ""}</textarea>
+          </div>
+          <div class="task-tools">
+            <label class="photo-btn" title="添加照片" aria-label="添加照片">
+              <span>▣</span>
+              <input type="file" accept="image/*" capture="environment">
+            </label>
+            <span class="photo-slot"></span>
+          </div>
+        `;
+
+        row.querySelector(".check").addEventListener("click", () => toggleDone(dateKey, task));
+        row.querySelector(".note").addEventListener("change", (event) => saveNote(dateKey, task, event.target.value));
+        row.querySelector("input").addEventListener("change", (event) => savePhoto(dateKey, task, event.target.files[0]));
+
+        const slot = row.querySelector(".photo-slot");
+        if (entry.photoId) {
+          renderThumb(slot, entry.photoId, task.name);
+        }
+        list.appendChild(row);
+      });
+    }
+
+    function renderWeek() {
+      const range = weekRange(selectedDate);
+      const days = Array.from({ length: 7 }, (_, i) => addDays(range.start, i));
+      const workdays = days.slice(0, 6);
+      const fixedTotal = workdays.length * fixedTasks.length;
+      const fixedDone = workdays.reduce((sum, day) => {
+        const key = formatDate(day);
+        return sum + fixedTasks.filter((task) => getEntry(key, task.id).done).length;
+      }, 0);
+      const flexDone = flexibleTasks.filter((task) => isFlexibleDoneThisWeek(task.id, range)).length;
+      el.weeklyMeter.textContent = `${fixedDone + flexDone}/${fixedTotal + flexibleTasks.length}`;
+
+      el.weeklyBoxes.innerHTML = "";
+      [
+        {
+          label: "固定作业",
+          done: fixedDone,
+          total: fixedTotal,
+          slots: workdays.map((day) => ({
+            label: weekNames[day.getDay()].replace("周", ""),
+            filled: fixedTasks.every((task) => getEntry(formatDate(day), task.id).done)
+          })),
+          note: "周一到周六每天：口算、练字、听力。"
+        },
+        {
+          label: "数学试卷",
+          done: flexibleTasks.filter((task) => task.group === "数学试卷" && isFlexibleDoneThisWeek(task.id, range)).length,
+          total: 2,
+          slots: flexibleTasks.filter((task) => task.group === "数学试卷").map((task, index) => ({ label: index + 1, filled: isFlexibleDoneThisWeek(task.id, range) })),
+          note: "本周累计完成 2 张。"
+        },
+        {
+          label: "语文试卷",
+          done: flexibleTasks.filter((task) => task.group === "语文试卷" && isFlexibleDoneThisWeek(task.id, range)).length,
+          total: 1,
+          slots: flexibleTasks.filter((task) => task.group === "语文试卷").map((task, index) => ({ label: index + 1, filled: isFlexibleDoneThisWeek(task.id, range) })),
+          note: "本周累计完成 1 张。"
+        }
+      ].forEach((box) => {
+        const item = document.createElement("section");
+        item.className = "week-box";
+        item.innerHTML = `
+          <p class="week-label">${box.label}</p>
+          <div class="slots">${box.slots.map((slot) => `<span class="slot ${slot.filled ? "filled" : ""}">${slot.label}</span>`).join("")}</div>
+          <div class="week-note">${box.done}/${box.total}<br>${box.note}</div>
+        `;
+        el.weeklyBoxes.appendChild(item);
+      });
+
+      el.calendar.innerHTML = "";
+      days.forEach((day) => {
+        const key = formatDate(day);
+        const dayEl = document.createElement("section");
+        const isToday = key === formatDate(new Date());
+        dayEl.className = `day ${isToday ? "today" : ""}`;
+        const workday = day.getDay() !== 0;
+        const fixedDoneDay = fixedTasks.filter((task) => getEntry(key, task.id).done).length;
+        const flexDoneDay = flexibleTasks.filter((task) => getEntry(key, task.id).done).length;
+        dayEl.innerHTML = `
+          <div class="day-num">
+            <span>${weekNames[day.getDay()]}</span>
+            <span>${day.getMonth() + 1}/${day.getDate()}</span>
+          </div>
+          <div class="mini">
+            ${workday ? `
+              <span class="mini-line ${fixedDoneDay === 3 ? "done" : ""}"><i class="dot"></i>固定 ${fixedDoneDay}/3</span>
+              <span class="mini-line ${flexDoneDay > 0 ? "done" : ""}"><i class="dot"></i>试卷 ${flexDoneDay}</span>
+              <span class="mini-line ${countPhotos(key) > 0 ? "done" : ""}"><i class="dot"></i>照片 ${countPhotos(key)}</span>
+            ` : `
+              <span class="mini-line done"><i class="dot"></i>休息日</span>
+            `}
+          </div>
+        `;
+        dayEl.addEventListener("click", () => {
+          selectedDate = day;
+          activeView = "today";
+          render();
+        });
+        el.calendar.appendChild(dayEl);
+      });
+    }
+
+    function renderRecords() {
+      const entries = [];
+      Object.keys(state.days).sort().reverse().forEach((dateKey) => {
+        const dayEntries = state.days[dateKey];
+        Object.keys(dayEntries).forEach((taskId) => {
+          const entry = dayEntries[taskId];
+          if (entry.done || entry.note || entry.photoId) {
+            const task = fixedTasks.concat(flexibleTasks).find((item) => item.id === taskId);
+            entries.push({ dateKey, task, entry });
+          }
+        });
+      });
+
+      if (!entries.length) {
+        el.recordsList.innerHTML = `<div class="empty">暂无打卡记录</div>`;
+        return;
+      }
+
+      el.recordsList.innerHTML = "";
+      entries.slice(0, 80).forEach(({ dateKey, task, entry }) => {
+        const row = document.createElement("article");
+        row.className = "record";
+        row.innerHTML = `
+          <div class="record-date">${dateKey}<br>${weekNames[new Date(`${dateKey}T00:00:00`).getDay()]}</div>
+          <div class="record-body">
+            <strong>${task ? task.name : taskId}</strong>
+            <span>${entry.done ? "已完成" : "未勾选"}${entry.photoId ? " · 有照片" : ""}</span>
+            ${entry.note ? `<span>${escapeHtml(entry.note)}</span>` : ""}
+          </div>
+        `;
+        el.recordsList.appendChild(row);
+      });
+    }
+
+    function taskMeta(task, entry) {
+      const parts = [];
+      if (task.kind === "固定") parts.push("每日固定任务");
+      if (task.kind === "变动") parts.push("本周任选时间完成");
+      if (entry.doneAt) parts.push(`完成于 ${formatTime(new Date(entry.doneAt))}`);
+      if (entry.photoId) parts.push("已附照片");
+      return parts.join(" · ");
+    }
+
+    function getTaskEntry(dateKey, task) {
+      if (task.kind === "变动") {
+        const range = weekRange(new Date(`${dateKey}T00:00:00`));
+        const existingDate = findFlexibleDate(task.id, range);
+        if (existingDate) return getEntry(existingDate, task.id);
+      }
+      return getEntry(dateKey, task.id);
+    }
+
+    function toggleDone(dateKey, task) {
+      const range = weekRange(new Date(`${dateKey}T00:00:00`));
+      const targetDate = task.kind === "变动" ? (findFlexibleDate(task.id, range) || dateKey) : dateKey;
+      const entry = ensureEntry(targetDate, task.id);
+      entry.done = !entry.done;
+      entry.doneAt = entry.done ? new Date().toISOString() : "";
+      persist();
+      render();
+    }
+
+    function saveNote(dateKey, task, note) {
+      const range = weekRange(new Date(`${dateKey}T00:00:00`));
+      const targetDate = task.kind === "变动" ? (findFlexibleDate(task.id, range) || dateKey) : dateKey;
+      const entry = ensureEntry(targetDate, task.id);
+      entry.note = note.trim();
+      persist();
+      renderRecords();
+      showToast("备注已保存");
+    }
+
+    async function savePhoto(dateKey, task, file) {
+      if (!file) return;
+      const resized = await resizeImage(file, 1280, .82);
+      const range = weekRange(new Date(`${dateKey}T00:00:00`));
+      const targetDate = task.kind === "变动" ? (findFlexibleDate(task.id, range) || dateKey) : dateKey;
+      const photoId = `${targetDate}-${task.id}-${Date.now()}`;
+      await putPhoto(photoId, resized);
+      const entry = ensureEntry(targetDate, task.id);
+      entry.photoId = photoId;
+      entry.photoName = file.name || "photo.jpg";
+      if (!entry.done) {
+        entry.done = true;
+        entry.doneAt = new Date().toISOString();
+      }
+      persist();
+      render();
+      showToast("照片已保存");
+    }
+
+    async function renderThumb(container, photoId, title) {
+      const blob = await getPhoto(photoId);
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const img = document.createElement("img");
+      img.className = "thumb";
+      img.alt = `${title}照片`;
+      img.src = url;
+      img.addEventListener("click", () => openPhoto(photoId, title));
+      container.innerHTML = "";
+      container.appendChild(img);
+    }
+
+    async function openPhoto(photoId, title) {
+      const blob = await getPhoto(photoId);
+      if (!blob) {
+        showToast("没有找到照片");
+        return;
+      }
+      el.photoTitle.textContent = title;
+      el.photoLarge.src = URL.createObjectURL(blob);
+      el.photoDialog.showModal();
+    }
+
+    function shareWeek() {
+      const text = buildWeeklySummary();
+      if (navigator.share) {
+        navigator.share({ title: "暑假任务本周进度", text }).catch(() => copySummary(text));
+      } else {
+        copySummary(text);
+      }
+    }
+
+    function copySummary(text) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => showToast("本周总结已复制"));
+      } else {
+        showToast(text);
+      }
+    }
+
+    function buildWeeklySummary() {
+      const range = weekRange(selectedDate);
+      const days = Array.from({ length: 6 }, (_, i) => addDays(range.start, i));
+      const lines = [`暑假任务本周进度（${formatDate(range.start)} 至 ${formatDate(range.end)}）`];
+      days.forEach((day) => {
+        const key = formatDate(day);
+        const fixedDoneDay = fixedTasks.filter((task) => getEntry(key, task.id).done).length;
+        const flex = flexibleTasks.filter((task) => getEntry(key, task.id).done).map((task) => task.name);
+        lines.push(`${key} ${weekNames[day.getDay()]}：固定 ${fixedDoneDay}/3${flex.length ? `，${flex.join("、")}` : ""}`);
+      });
+      const mathDone = flexibleTasks.filter((task) => task.group === "数学试卷" && isFlexibleDoneThisWeek(task.id, range)).length;
+      const chineseDone = flexibleTasks.filter((task) => task.group === "语文试卷" && isFlexibleDoneThisWeek(task.id, range)).length;
+      lines.push(`本周试卷：数学 ${mathDone}/2，语文 ${chineseDone}/1。`);
+      return lines.join("\n");
+    }
+
+    function exportRecords() {
+      const data = JSON.stringify(state, null, 2);
+      const blob = new Blob([data], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `暑假任务打卡-${formatDate(new Date())}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function getEntry(dateKey, taskId) {
+      return state.days[dateKey]?.[taskId] || {};
+    }
+
+    function ensureEntry(dateKey, taskId) {
+      state.days[dateKey] ||= {};
+      state.days[dateKey][taskId] ||= { done: false, doneAt: "", note: "", photoId: "" };
+      return state.days[dateKey][taskId];
+    }
+
+    function isFlexibleDoneThisWeek(taskId, range) {
+      return Boolean(findFlexibleDate(taskId, range));
+    }
+
+    function findFlexibleDate(taskId, range) {
+      for (let i = 0; i < 6; i += 1) {
+        const key = formatDate(addDays(range.start, i));
+        if (getEntry(key, taskId).done) return key;
+      }
+      return "";
+    }
+
+    function countPhotos(dateKey) {
+      return Object.values(state.days[dateKey] || {}).filter((entry) => entry.photoId).length;
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem("summer-task-state-v1");
+        if (raw) return JSON.parse(raw);
+      } catch (error) {
+        console.warn(error);
+      }
+      return { version: 1, days: {} };
+    }
+
+    function persist() {
+      localStorage.setItem("summer-task-state-v1", JSON.stringify(state));
+    }
+
+    function openDb() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName, 1);
+        request.onupgradeneeded = () => request.result.createObjectStore(storeName);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    function putPhoto(id, blob) {
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, "readwrite");
+        tx.objectStore(storeName).put(blob, id);
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    function getPhoto(id) {
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, "readonly");
+        const request = tx.objectStore(storeName).get(id);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    function resizeImage(file, maxSide, quality) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((blob) => resolve(blob || file), "image/jpeg", quality);
+          URL.revokeObjectURL(img.src);
+        };
+        img.onerror = () => resolve(file);
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    function weekRange(date) {
+      const d = startOfDay(date);
+      const mondayOffset = d.getDay() === 0 ? -6 : 1 - d.getDay();
+      const start = addDays(d, mondayOffset);
+      return { start, end: addDays(start, 6) };
+    }
+
+    function startOfDay(date) {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
+
+    function addDays(date, days) {
+      const next = new Date(date);
+      next.setDate(next.getDate() + days);
+      return startOfDay(next);
+    }
+
+    function formatDate(date) {
+      const d = startOfDay(date);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    function formatShort(date) {
+      return `${date.getMonth() + 1}/${date.getDate()}`;
+    }
+
+    function formatTime(date) {
+      return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    }
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    let toastTimer;
+    function showToast(message) {
+      clearTimeout(toastTimer);
+      el.toast.textContent = message;
+      el.toast.classList.add("show");
+      toastTimer = setTimeout(() => el.toast.classList.remove("show"), 1800);
+    }
+  </script>
+</body>
+</html>
