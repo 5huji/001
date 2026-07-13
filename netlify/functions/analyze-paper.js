@@ -34,16 +34,20 @@ exports.handler = async (event) => {
   }
 
   const prompt = buildPrompt(body);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 18000);
 
   try {
     const response = await fetch(ARK_API_URL, {
       method: "POST",
+      signal: controller.signal,
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
         model: ARK_MODEL,
+        max_output_tokens: 700,
         input: [
           {
             role: "user",
@@ -55,31 +59,42 @@ exports.handler = async (event) => {
         ]
       })
     });
+    clearTimeout(timeout);
 
-    const payload = await response.json().catch(() => ({}));
+    const responseText = await response.text();
+    const payload = safeJson(responseText);
     if (!response.ok) {
-      return json(response.status, { error: payload.error?.message || payload.message || "豆包分析失败" });
+      return json(response.status, {
+        error: payload.error?.message || payload.message || `豆包分析失败：${response.status}`,
+        status: response.status,
+        detail: payload.raw || payload
+      });
     }
 
     const text = extractText(payload);
     const result = parseResult(text);
     return json(200, { result, rawText: text });
   } catch (error) {
+    clearTimeout(timeout);
+    if (error.name === "AbortError") {
+      return json(504, { error: "豆包分析超时。请只拍一道错题的局部照片，照片里尽量不要包含整页卷子。" });
+    }
     return json(500, { error: error.message || "后台调用失败" });
   }
 };
 
 function buildPrompt(body) {
   return `
-你是一位耐心的小学四年级数学老师。请根据图片中的数学卷子和孩子手写答案，找出明确做错或疑似做错的题目，并进行错题复盘。
+你是一位耐心的小学四年级数学老师。请根据图片中的数学题和孩子手写答案，快速找出 1 道最清楚、最确定的错题或疑似错题，并进行错题复盘。
 
 要求：
 1. 没有标准答案时，请你先自己解题，再对比孩子的答案。
-2. 只输出你能看清楚、能判断的题。看不清的不要胡编，可以在 summary 里提醒重新拍照。
-3. 错因要尽量具体，例如：审题不完整、计算错误、单位换算错误、数量关系没理清、概念没掌握、步骤漏写。
-4. explanation 要用四年级孩子能听懂的话，短句、具体，不要讲太抽象。
-5. 每道错题生成 3 道同类型强化题，难度接近原题，不要直接给答案。
-6. 必须只返回 JSON，不要返回 Markdown，不要包裹代码块。
+2. 只分析 1 道题，优先选择你看得最清楚、最确定的题。
+3. 看不清的不要胡编，可以在 summary 里提醒重新拍局部照片。
+4. 错因要尽量具体，例如：审题不完整、计算错误、单位换算错误、数量关系没理清、概念没掌握、步骤漏写。
+5. explanation 要用四年级孩子能听懂的话，控制在 60 字以内。
+6. 每道错题生成 3 道同类型强化题，难度接近原题，不要直接给答案。
+7. 必须只返回 JSON，不要返回 Markdown，不要包裹代码块，不要输出多余文字。
 
 卷子名称：${body.title || "数学卷子"}
 年级：${body.grade || "四年级"}
@@ -144,6 +159,14 @@ function parseResult(text) {
       }
     }
     return fallback;
+  }
+}
+
+function safeJson(text) {
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    return { raw: String(text || "").slice(0, 500) };
   }
 }
 
