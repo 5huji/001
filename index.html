@@ -590,7 +590,7 @@
       <section class="panel hidden" id="weekView">
         <div class="panel-head">
           <h2 class="panel-title">本周进度</h2>
-          <div class="meter" id="weeklyMeter">0/21</div>
+          <div class="meter" id="weeklyMeter">0/27</div>
         </div>
         <div class="weekly-grid" id="weeklyBoxes"></div>
         <div class="calendar" id="calendar"></div>
@@ -622,7 +622,8 @@
     const fixedTasks = [
       { id: "mental", name: "口算一篇", kind: "固定" },
       { id: "writing", name: "练字一篇", kind: "固定" },
-      { id: "listening", name: "听力一篇", kind: "固定" }
+      { id: "listening", name: "听力一篇", kind: "固定" },
+      { id: "words", name: "背 5 个单词", kind: "固定", requiresWords: true, wordCount: 5 }
     ];
 
     const flexibleTasks = [
@@ -761,7 +762,7 @@
               <span class="tag ${task.kind === "变动" ? "flex" : ""}">${task.kind}</span>
             </div>
             <div class="task-meta">${taskMeta(task, entry)}</div>
-            <textarea class="note" rows="1" placeholder="备注" aria-label="${task.name}备注">${entry.note || ""}</textarea>
+            <textarea class="note" rows="${task.requiresWords ? "2" : "1"}" placeholder="${notePlaceholder(task)}" aria-label="${task.name}记录">${escapeHtml(entry.note || "")}</textarea>
           </div>
           <div class="task-tools">
             <label class="photo-btn" title="添加照片" aria-label="添加照片">
@@ -773,6 +774,7 @@
         `;
 
         row.querySelector(".check").addEventListener("click", () => toggleDone(dateKey, task));
+        row.querySelector(".note").addEventListener("input", (event) => saveNote(dateKey, task, event.target.value, { silent: true }));
         row.querySelector(".note").addEventListener("change", (event) => saveNote(dateKey, task, event.target.value));
         row.querySelector("input").addEventListener("change", (event) => savePhoto(dateKey, task, event.target.files[0]));
 
@@ -806,7 +808,7 @@
             label: weekNames[day.getDay()].replace("周", ""),
             filled: fixedTasks.every((task) => getEntry(formatDate(day), task.id).done)
           })),
-          note: "周一到周六每天：口算、练字、听力。"
+          note: "周一到周六每天：口算、练字、听力、背 5 个单词。"
         },
         {
           label: "数学试卷",
@@ -849,7 +851,7 @@
           </div>
           <div class="mini">
             ${workday ? `
-              <span class="mini-line ${fixedDoneDay === 3 ? "done" : ""}"><i class="dot"></i>固定 ${fixedDoneDay}/3</span>
+              <span class="mini-line ${fixedDoneDay === fixedTasks.length ? "done" : ""}"><i class="dot"></i>固定 ${fixedDoneDay}/${fixedTasks.length}</span>
               <span class="mini-line ${flexDoneDay > 0 ? "done" : ""}"><i class="dot"></i>试卷 ${flexDoneDay}</span>
               <span class="mini-line ${countPhotos(key) > 0 ? "done" : ""}"><i class="dot"></i>照片 ${countPhotos(key)}</span>
             ` : `
@@ -904,9 +906,15 @@
       const parts = [];
       if (task.kind === "固定") parts.push("每日固定任务");
       if (task.kind === "变动") parts.push("本周任选时间完成");
+      if (task.requiresWords) parts.push(`已写 ${countWords(entry.note || "")}/${task.wordCount} 个单词`);
       if (entry.doneAt) parts.push(`完成于 ${formatTime(new Date(entry.doneAt))}`);
       if (entry.photoId) parts.push("已附照片");
       return parts.join(" · ");
+    }
+
+    function notePlaceholder(task) {
+      if (task.requiresWords) return "写下今天背的 5 个单词";
+      return "备注";
     }
 
     function getTaskEntry(dateKey, task) {
@@ -922,20 +930,26 @@
       const range = weekRange(new Date(`${dateKey}T00:00:00`));
       const targetDate = task.kind === "变动" ? (findFlexibleDate(task.id, range) || dateKey) : dateKey;
       const entry = ensureEntry(targetDate, task.id);
+      if (!entry.done && task.requiresWords && countWords(entry.note || "") < task.wordCount) {
+        showToast(`请先写满 ${task.wordCount} 个单词`);
+        return;
+      }
       entry.done = !entry.done;
       entry.doneAt = entry.done ? new Date().toISOString() : "";
       persist();
       render();
     }
 
-    function saveNote(dateKey, task, note) {
+    function saveNote(dateKey, task, note, options = {}) {
       const range = weekRange(new Date(`${dateKey}T00:00:00`));
       const targetDate = task.kind === "变动" ? (findFlexibleDate(task.id, range) || dateKey) : dateKey;
       const entry = ensureEntry(targetDate, task.id);
       entry.note = note.trim();
       persist();
-      renderRecords();
-      showToast("备注已保存");
+      if (!options.silent) {
+        renderRecords();
+        showToast(task.requiresWords ? "单词已保存" : "备注已保存");
+      }
     }
 
     async function savePhoto(dateKey, task, file) {
@@ -1006,7 +1020,8 @@
         const key = formatDate(day);
         const fixedDoneDay = fixedTasks.filter((task) => getEntry(key, task.id).done).length;
         const flex = flexibleTasks.filter((task) => getEntry(key, task.id).done).map((task) => task.name);
-        lines.push(`${key} ${weekNames[day.getDay()]}：固定 ${fixedDoneDay}/3${flex.length ? `，${flex.join("、")}` : ""}`);
+        const words = getEntry(key, "words").note;
+        lines.push(`${key} ${weekNames[day.getDay()]}：固定 ${fixedDoneDay}/${fixedTasks.length}${words ? `，单词：${words}` : ""}${flex.length ? `，${flex.join("、")}` : ""}`);
       });
       const mathDone = flexibleTasks.filter((task) => task.group === "数学试卷" && isFlexibleDoneThisWeek(task.id, range)).length;
       const chineseDone = flexibleTasks.filter((task) => task.group === "语文试卷" && isFlexibleDoneThisWeek(task.id, range)).length;
@@ -1048,6 +1063,14 @@
 
     function countPhotos(dateKey) {
       return Object.values(state.days[dateKey] || {}).filter((entry) => entry.photoId).length;
+    }
+
+    function countWords(value) {
+      return value
+        .split(/[\s,，、;；。.\n\r]+/)
+        .map((word) => word.trim())
+        .filter(Boolean)
+        .length;
     }
 
     function loadState() {
