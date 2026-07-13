@@ -131,7 +131,7 @@
 
     .tabs {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 6px;
       width: min(520px, 100%);
       padding: 5px;
@@ -460,6 +460,141 @@
       color: var(--muted);
     }
 
+    .review-form {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      background: var(--paper);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field span {
+      font-weight: 800;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .input, .select, .textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,.86);
+      color: var(--ink);
+    }
+
+    .textarea {
+      min-height: 84px;
+      resize: vertical;
+    }
+
+    .upload-line {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .file-pick {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      font-weight: 800;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .file-pick input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .review-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .review-list {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      background: var(--paper);
+    }
+
+    .review-card {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: rgba(255,255,255,.72);
+    }
+
+    .review-image {
+      width: 112px;
+      height: 146px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: white;
+    }
+
+    .review-main {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .review-title {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .review-meta {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .review-result {
+      display: grid;
+      gap: 10px;
+      line-height: 1.58;
+      overflow-wrap: anywhere;
+    }
+
+    .mistake {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff8ea;
+    }
+
+    .mistake h4 {
+      margin: 0 0 6px;
+      font-size: 16px;
+    }
+
+    .mistake ul {
+      margin: 6px 0 0;
+      padding-left: 20px;
+    }
+
     .empty {
       padding: 32px 16px;
       text-align: center;
@@ -550,6 +685,13 @@
       .record {
         grid-template-columns: 1fr;
       }
+      .upload-line, .review-card {
+        grid-template-columns: 1fr;
+      }
+      .review-image {
+        width: 100%;
+        height: 180px;
+      }
     }
   </style>
 </head>
@@ -575,6 +717,7 @@
     <nav class="tabs" aria-label="视图">
       <button class="tab" data-view="today" aria-selected="true">今日</button>
       <button class="tab" data-view="week" aria-selected="false">本周</button>
+      <button class="tab" data-view="review" aria-selected="false">复盘</button>
       <button class="tab" data-view="records" aria-selected="false">记录</button>
     </nav>
 
@@ -602,6 +745,39 @@
           <button class="text-btn" id="exportBtn">导出记录</button>
         </div>
         <div class="record-list" id="recordsList"></div>
+      </section>
+
+      <section class="panel hidden" id="reviewView">
+        <div class="panel-head">
+          <h2 class="panel-title">数学卷子复盘</h2>
+          <div class="meter" id="reviewMeter">0 套</div>
+        </div>
+        <div class="review-form">
+          <label class="field">
+            <span>卷子名称</span>
+            <input class="input" id="paperTitle" placeholder="例如：数学卷子 1">
+          </label>
+          <label class="field">
+            <span>分析接口地址</span>
+            <input class="input" id="analysisEndpoint" placeholder="默认使用 /.netlify/functions/analyze-paper">
+          </label>
+          <label class="field">
+            <span>补充说明</span>
+            <textarea class="textarea" id="paperNote" placeholder="可选：比如告诉 AI 这是四年级数学、请重点找计算错误和审题错误。"></textarea>
+          </label>
+          <div class="upload-line">
+            <span class="task-meta" id="paperPhotoName">还没有选择卷子照片</span>
+            <label class="file-pick">
+              拍照/选择卷子
+              <input id="paperPhotoInput" type="file" accept="image/*" capture="environment">
+            </label>
+          </div>
+          <div class="review-actions">
+            <button class="primary-btn" id="savePaperBtn">保存卷子</button>
+            <button class="text-btn" id="saveEndpointBtn">保存接口地址</button>
+          </div>
+        </div>
+        <div class="review-list" id="reviewList"></div>
       </section>
     </main>
   </div>
@@ -650,11 +826,20 @@
       weeklyBoxes: document.getElementById("weeklyBoxes"),
       calendar: document.getElementById("calendar"),
       recordsList: document.getElementById("recordsList"),
+      reviewMeter: document.getElementById("reviewMeter"),
+      reviewList: document.getElementById("reviewList"),
+      paperTitle: document.getElementById("paperTitle"),
+      paperNote: document.getElementById("paperNote"),
+      paperPhotoInput: document.getElementById("paperPhotoInput"),
+      paperPhotoName: document.getElementById("paperPhotoName"),
+      analysisEndpoint: document.getElementById("analysisEndpoint"),
       toast: document.getElementById("toast"),
       photoDialog: document.getElementById("photoDialog"),
       photoLarge: document.getElementById("photoLarge"),
       photoTitle: document.getElementById("photoTitle")
     };
+
+    let selectedPaperPhoto;
 
     init();
 
@@ -703,6 +888,13 @@
       document.getElementById("shareBtn").addEventListener("click", shareWeek);
       document.getElementById("exportBtn").addEventListener("click", exportRecords);
       document.getElementById("closePhoto").addEventListener("click", () => el.photoDialog.close());
+      document.getElementById("savePaperBtn").addEventListener("click", savePaperReview);
+      document.getElementById("saveEndpointBtn").addEventListener("click", saveAnalysisEndpoint);
+      el.paperPhotoInput.addEventListener("change", (event) => {
+        selectedPaperPhoto = event.target.files[0];
+        el.paperPhotoName.textContent = selectedPaperPhoto ? selectedPaperPhoto.name || "已选择卷子照片" : "还没有选择卷子照片";
+      });
+      el.analysisEndpoint.value = state.settings?.analysisEndpoint || "";
     }
 
     function render() {
@@ -710,6 +902,7 @@
       updateTabs();
       renderToday();
       renderWeek();
+      renderReview();
       renderRecords();
     }
 
@@ -726,6 +919,7 @@
       });
       document.getElementById("todayView").classList.toggle("hidden", activeView !== "today");
       document.getElementById("weekView").classList.toggle("hidden", activeView !== "week");
+      document.getElementById("reviewView").classList.toggle("hidden", activeView !== "review");
       document.getElementById("recordsView").classList.toggle("hidden", activeView !== "records");
     }
 
@@ -866,6 +1060,166 @@
         });
         el.calendar.appendChild(dayEl);
       });
+    }
+
+    function renderReview() {
+      const reviews = state.reviews || [];
+      el.reviewMeter.textContent = `${reviews.length} 套`;
+
+      if (!reviews.length) {
+        el.reviewList.innerHTML = `<div class="empty">还没有卷子复盘。拍一张数学卷子，保存后再点 AI 分析。</div>`;
+        return;
+      }
+
+      el.reviewList.innerHTML = "";
+      reviews.slice().reverse().forEach((review) => {
+        const card = document.createElement("article");
+        card.className = "review-card";
+        card.innerHTML = `
+          <div class="review-photo"></div>
+          <div class="review-main">
+            <h3 class="review-title">${escapeHtml(review.title || "数学卷子")}</h3>
+            <div class="review-meta">${escapeHtml(review.dateKey)} · ${review.status === "done" ? "已分析" : review.status === "analyzing" ? "分析中" : "待分析"}</div>
+            ${review.note ? `<div class="task-meta">${escapeHtml(review.note)}</div>` : ""}
+            <div class="review-actions">
+              <button class="primary-btn analyze-btn">${review.status === "done" ? "重新分析" : "AI 分析"}</button>
+              <button class="text-btn delete-btn">删除</button>
+            </div>
+            <div class="review-result">${renderAnalysisResult(review.result)}</div>
+          </div>
+        `;
+
+        const photoSlot = card.querySelector(".review-photo");
+        if (review.photoId) renderReviewPhoto(photoSlot, review.photoId, review.title);
+        card.querySelector(".analyze-btn").addEventListener("click", () => analyzeReview(review.id));
+        card.querySelector(".delete-btn").addEventListener("click", () => deleteReview(review.id));
+        el.reviewList.appendChild(card);
+      });
+    }
+
+    async function savePaperReview() {
+      if (!selectedPaperPhoto) {
+        showToast("请先拍照或选择卷子照片");
+        return;
+      }
+
+      const title = el.paperTitle.value.trim() || `数学卷子 ${formatShort(selectedDate)}`;
+      const note = el.paperNote.value.trim();
+      const resized = await resizeImage(selectedPaperPhoto, 1600, .86);
+      const id = `review-${Date.now()}`;
+      const photoId = `${id}-photo`;
+      await putPhoto(photoId, resized);
+      state.reviews ||= [];
+      state.reviews.push({
+        id,
+        title,
+        note,
+        photoId,
+        dateKey: formatDate(new Date()),
+        status: "new",
+        result: null
+      });
+      persist();
+      selectedPaperPhoto = null;
+      el.paperPhotoInput.value = "";
+      el.paperPhotoName.textContent = "还没有选择卷子照片";
+      el.paperTitle.value = "";
+      el.paperNote.value = "";
+      renderReview();
+      showToast("卷子已保存");
+    }
+
+    function saveAnalysisEndpoint() {
+      state.settings ||= {};
+      state.settings.analysisEndpoint = el.analysisEndpoint.value.trim();
+      persist();
+      showToast("接口地址已保存");
+    }
+
+    async function analyzeReview(reviewId) {
+      const review = (state.reviews || []).find((item) => item.id === reviewId);
+      if (!review) return;
+
+      const endpoint = (state.settings?.analysisEndpoint || "/.netlify/functions/analyze-paper").trim();
+      const blob = await getPhoto(review.photoId);
+      if (!blob) {
+        showToast("没有找到卷子照片");
+        return;
+      }
+
+      review.status = "analyzing";
+      persist();
+      renderReview();
+      showToast("正在分析卷子，请稍等");
+
+      try {
+        const imageData = await blobToDataUrl(blob);
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: review.title,
+            note: review.note,
+            grade: "四年级",
+            image: imageData
+          })
+        });
+
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "分析失败");
+        review.status = "done";
+        review.result = payload.result;
+        review.analyzedAt = new Date().toISOString();
+        persist();
+        renderReview();
+        showToast("分析完成");
+      } catch (error) {
+        review.status = "new";
+        persist();
+        renderReview();
+        showToast(error.message || "分析失败");
+      }
+    }
+
+    function deleteReview(reviewId) {
+      state.reviews = (state.reviews || []).filter((item) => item.id !== reviewId);
+      persist();
+      renderReview();
+      showToast("已删除");
+    }
+
+    async function renderReviewPhoto(container, photoId, title) {
+      const blob = await getPhoto(photoId);
+      if (!blob) return;
+      const img = document.createElement("img");
+      img.className = "review-image";
+      img.alt = `${title}照片`;
+      img.src = URL.createObjectURL(blob);
+      img.addEventListener("click", () => openPhoto(photoId, title));
+      container.innerHTML = "";
+      container.appendChild(img);
+    }
+
+    function renderAnalysisResult(result) {
+      if (!result) return `<div class="task-meta">保存卷子后，点击 AI 分析生成错题复盘。</div>`;
+      const mistakes = Array.isArray(result.mistakes) ? result.mistakes : [];
+      if (!mistakes.length) {
+        return `<div class="task-meta">${escapeHtml(result.summary || "AI 没有识别到明确错题，可以换一张更清晰的照片重新分析。")}</div>`;
+      }
+      return `
+        ${result.summary ? `<div><strong>总体情况：</strong>${escapeHtml(result.summary)}</div>` : ""}
+        ${mistakes.map((item, index) => `
+          <section class="mistake">
+            <h4>错题 ${index + 1}${item.questionNumber ? `：${escapeHtml(item.questionNumber)}` : ""}</h4>
+            ${item.question ? `<div><strong>题目：</strong>${escapeHtml(item.question)}</div>` : ""}
+            ${item.childAnswer ? `<div><strong>她的答案：</strong>${escapeHtml(item.childAnswer)}</div>` : ""}
+            ${item.correctAnswer ? `<div><strong>正确答案：</strong>${escapeHtml(item.correctAnswer)}</div>` : ""}
+            ${item.reason ? `<div><strong>错因：</strong>${escapeHtml(item.reason)}</div>` : ""}
+            ${item.explanation ? `<div><strong>讲给四年级听：</strong>${escapeHtml(item.explanation)}</div>` : ""}
+            ${Array.isArray(item.practice) && item.practice.length ? `<div><strong>同类强化题：</strong><ul>${item.practice.map((q) => `<li>${escapeHtml(q)}</li>`).join("")}</ul></div>` : ""}
+          </section>
+        `).join("")}
+      `;
     }
 
     function renderRecords() {
@@ -1076,11 +1430,17 @@
     function loadState() {
       try {
         const raw = localStorage.getItem("summer-task-state-v1");
-        if (raw) return JSON.parse(raw);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          parsed.days ||= {};
+          parsed.reviews ||= [];
+          parsed.settings ||= {};
+          return parsed;
+        }
       } catch (error) {
         console.warn(error);
       }
-      return { version: 1, days: {} };
+      return { version: 2, days: {}, reviews: [], settings: {} };
     }
 
     function persist() {
@@ -1132,6 +1492,15 @@
       });
     }
 
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+    }
+
     function weekRange(date) {
       const d = startOfDay(date);
       const mondayOffset = d.getDay() === 0 ? -6 : 1 - d.getDay();
@@ -1163,7 +1532,7 @@
     }
 
     function escapeHtml(value) {
-      return value.replace(/[&<>"']/g, (char) => ({
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
