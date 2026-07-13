@@ -1105,7 +1105,7 @@
 
       const title = el.paperTitle.value.trim() || `数学卷子 ${formatShort(selectedDate)}`;
       const note = el.paperNote.value.trim();
-      const resized = await resizeImage(selectedPaperPhoto, 1600, .86);
+      const resized = await resizeImage(selectedPaperPhoto, 1100, .72);
       const id = `review-${Date.now()}`;
       const photoId = `${id}-photo`;
       await putPhoto(photoId, resized);
@@ -1165,7 +1165,7 @@
           })
         });
 
-        const payload = await response.json();
+        const payload = await readJsonResponse(response);
         if (!response.ok) throw new Error(payload.error || "分析失败");
         review.status = "done";
         review.result = payload.result;
@@ -1499,6 +1499,16 @@
         reader.onerror = () => reject(reader.error);
         reader.readAsDataURL(blob);
       });
+    }
+
+    async function readJsonResponse(response) {
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (error) {
+        const preview = text.replace(/\s+/g, " ").slice(0, 120);
+        throw new Error(`接口没有返回 JSON：${preview || response.status}`);
+      }
     }
 
     function weekRange(date) {
